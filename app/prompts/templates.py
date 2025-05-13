@@ -163,9 +163,191 @@ LOCATION_COLLECTION_TEMPLATE = PromptTemplate(
     ]
 )
 
+# Booking Collection Template
+BOOKING_TEMPLATE = PromptTemplate(
+    name="booking_collection",
+    objective=PromptObjective.COLLECT_CONFIRM_INFORM,
+    description="Collect and confirm booking details",
+    instructions=[
+        "1. Collect date and time for booking",
+        "2. Collect number of guests",
+        "3. Verify availability",
+        "4. Collect customer name and contact",
+        "5. Confirm all booking details",
+        "6. Inform about booking confirmation"
+    ],
+    entities=[
+        EntityDefinition(
+            name="date",
+            type=EntityType.DATE,
+            collection_method="direct_input",
+            verification_method=VerificationMethod.TOOL,
+            tool_name="verify_date",
+            validation_rules={
+                "not_past": "Date cannot be in the past",
+                "within_range": "Date must be within next 30 days"
+            }
+        ),
+        EntityDefinition(
+            name="time",
+            type=EntityType.TIME,
+            collection_method="option_selection",
+            verification_method=VerificationMethod.TOOL,
+            tool_name="verify_time_slot",
+            options=["12:00 PM", "1:00 PM", "2:00 PM", "7:00 PM", "8:00 PM", "9:00 PM"],
+            validation_rules={
+                "valid_slot": "Time must be an available slot"
+            }
+        ),
+        EntityDefinition(
+            name="guests",
+            type=EntityType.NUMBER,
+            collection_method="direct_input",
+            verification_method=VerificationMethod.IN_CONTEXT,
+            validation_rules={
+                "min_guests": "Minimum 2 guests required",
+                "max_guests": "Maximum 20 guests allowed per booking"
+            }
+        ),
+        EntityDefinition(
+            name="customer_name",
+            type=EntityType.STRING,
+            collection_method="direct_input",
+            verification_method=VerificationMethod.IN_CONTEXT,
+            validation_rules={
+                "required": "Name is required"
+            }
+        ),
+        EntityDefinition(
+            name="contact_number",
+            type=EntityType.STRING,
+            collection_method="direct_input",
+            verification_method=VerificationMethod.TOOL,
+            tool_name="verify_phone",
+            validation_rules={
+                "valid_phone": "Must be a valid 10-digit phone number"
+            }
+        )
+    ],
+    confirmation_required=True,
+    confirmation_method="explicit_confirmation",
+    inform_conditions=[
+        {
+            "condition": "booking_confirmed",
+            "information": "booking_details"
+        }
+    ],
+    negative_consequences=[
+        "If date is invalid, booking cannot proceed",
+        "If time slot is unavailable, alternate slots must be suggested",
+        "If guest count exceeds limit, booking cannot proceed",
+        "If contact details are invalid, booking confirmation cannot be sent"
+    ],
+    transition_rules=[
+        TransitionRule(
+            condition="all_details_valid and booking_confirmed",
+            next_state="booking_confirmation",
+            reason="All booking details are valid and confirmed"
+        ),
+        TransitionRule(
+            condition="date_invalid or time_invalid",
+            next_state="booking_collection",
+            reason="Date or time is invalid, need to recollect"
+        ),
+        TransitionRule(
+            condition="guests_invalid",
+            next_state="booking_collection",
+            reason="Guest count is invalid, need to recollect"
+        )
+    ],
+    examples=[
+        {
+            "user_input": "I want to book for tomorrow",
+            "response": "Sure! What time would you prefer? We have slots available at 12:00 PM, 1:00 PM, 2:00 PM, 7:00 PM, 8:00 PM, and 9:00 PM.",
+            "explanation": "Example of collecting booking time after date"
+        },
+        {
+            "user_input": "8 PM for 4 people",
+            "response": "Great! Could you please provide your name for the booking?",
+            "explanation": "Example of collecting customer details"
+        }
+    ]
+)
+
+# FAQ Handling Template
+FAQ_TEMPLATE = PromptTemplate(
+    name="faq_handling",
+    objective=PromptObjective.COLLECT_INFORM,
+    description="Handle FAQ queries and provide relevant information",
+    instructions=[
+        "1. Identify FAQ category from user query",
+        "2. Search knowledge base for relevant answer",
+        "3. Provide answer with any related information",
+        "4. Ask if the answer was helpful"
+    ],
+    entities=[
+        EntityDefinition(
+            name="query",
+            type=EntityType.STRING,
+            collection_method="direct_input",
+            verification_method=VerificationMethod.TOOL,
+            tool_name="search_faqs",
+            validation_rules={
+                "min_length": "Query must not be empty"
+            }
+        )
+    ],
+    confirmation_required=False,
+    inform_conditions=[
+        {
+            "condition": "faq_found",
+            "information": "faq_answer"
+        },
+        {
+            "condition": "no_faq_found",
+            "information": "alternative_help"
+        }
+    ],
+    negative_consequences=[
+        "If FAQ not found, user may need to be redirected to support",
+        "If answer is incomplete, user satisfaction may be affected"
+    ],
+    transition_rules=[
+        TransitionRule(
+            condition="answer_provided and user_satisfied",
+            next_state="end_conversation",
+            reason="User's query has been answered satisfactorily"
+        ),
+        TransitionRule(
+            condition="answer_provided and not user_satisfied",
+            next_state="support_redirect",
+            reason="User needs additional support"
+        ),
+        TransitionRule(
+            condition="no_answer_found",
+            next_state="support_redirect",
+            reason="No relevant FAQ found, redirecting to support"
+        )
+    ],
+    examples=[
+        {
+            "user_input": "What's your cancellation policy?",
+            "response": "Our cancellation policy allows free cancellation up to 4 hours before your booking time. After that, a cancellation fee may apply. Would you like more details about specific scenarios?",
+            "explanation": "Example of providing FAQ answer with follow-up option"
+        },
+        {
+            "user_input": "Do you have valet parking?",
+            "response": "Yes, we offer complimentary valet parking at most of our outlets. However, this may vary by location. Since you're interested in our {location} outlet, I can confirm that they do offer valet parking service.",
+            "explanation": "Example of location-specific FAQ answer"
+        }
+    ]
+)
+
 # Add more templates for menu selection, booking, etc.
 
 TEMPLATES = {
     "city_collection": CITY_COLLECTION_TEMPLATE,
-    "location_collection": LOCATION_COLLECTION_TEMPLATE
+    "location_collection": LOCATION_COLLECTION_TEMPLATE,
+    "booking_collection": BOOKING_TEMPLATE,
+    "faq_handling": FAQ_TEMPLATE
 } 

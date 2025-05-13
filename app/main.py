@@ -1,24 +1,41 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Path
 from app.services.menu_processor import MenuProcessor
 from app.services.faq_processor import FAQProcessor
 from app.services.chat_handler import ChatHandler, UserMessage, ChatResponse
 from app.models.menu import MenuItem, SpiceLevel, Menu
 from app.models.faq import FAQ
-from typing import List, Optional
+from app.models.knowledge_base import PhoneContact, OutletInfo
+from typing import List, Optional, Dict
 from datetime import datetime, time
 
 app = FastAPI(
     title="BBQ Nation Interactive Menu API",
-    description="Advanced API for BBQ Nation's intelligent menu system",
-    version="2.0.0"
+    description="""
+    Advanced API for BBQ Nation's intelligent menu and booking system.
+    
+    Features:
+    - Interactive chat support for bookings and inquiries
+    - Dynamic menu recommendations
+    - FAQ handling
+    - Phone contact information
+    
+    Available Cities:
+    - Bangalore (Indiranagar, JP Nagar)
+    - New Delhi (Connaught Place, Vasant Kunj)
+    """,
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
+# Initialize services
 menu_processor = MenuProcessor()
 faq_processor = FAQProcessor()
 chat_handler = ChatHandler()
 
 @app.get("/")
 async def root():
+    """Get API status and available features"""
     return {
         "message": "Welcome to BBQ Nation Interactive Menu API",
         "version": "2.0.0",
@@ -29,109 +46,91 @@ async def root():
             "Chef's specials",
             "Festival menu items",
             "Intelligent FAQ system",
-            "Interactive Chat Support"
+            "Interactive Chat Support",
+            "Phone Contact Information"
         ]
     }
 
-@app.get("/menu", response_model=Menu)
-async def get_full_menu(
-    time_of_day: Optional[str] = Query(None, description="Filter by time of day (lunch/dinner)")
-):
-    menu = menu_processor.process_raw_menu()
-    if time_of_day:
-        # Filter categories by available times
-        menu.categories = [
-            cat for cat in menu.categories 
-            if time_of_day.lower() in [t.lower() for t in cat.available_times]
-        ]
-    return menu
+@app.get("/knowledge-base/cities")
+async def get_cities() -> List[str]:
+    """Get list of available cities"""
+    return chat_handler.knowledge_processor.get_available_cities()
 
-@app.get("/menu/dietary", response_model=List[MenuItem])
-async def get_menu_by_dietary_preferences(
-    is_veg: Optional[bool] = None,
-    is_jain: Optional[bool] = None,
-    is_halal: Optional[bool] = None,
-    gluten_free: Optional[bool] = None
-):
-    items = menu_processor.get_menu_by_dietary_preference(
-        is_veg=is_veg,
-        is_jain=is_jain,
-        is_halal=is_halal,
-        gluten_free=gluten_free
-    )
-    if not items:
+@app.get("/knowledge-base/locations/{city}")
+async def get_locations(city: str) -> List[str]:
+    """Get locations for a specific city"""
+    locations = chat_handler.knowledge_processor.get_locations_in_city(city)
+    if not locations:
+        raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+    return locations
+
+@app.get("/knowledge-base/outlet/{city}/{location}")
+async def get_outlet_info(city: str, location: str) -> OutletInfo:
+    """Get detailed information about a specific outlet"""
+    outlet = chat_handler.knowledge_processor.knowledge_base.outlets.get(city, {}).get(location)
+    if not outlet:
         raise HTTPException(
             status_code=404,
-            detail="No items found matching the dietary preferences"
+            detail=f"Outlet not found in {location}, {city}"
         )
-    return items
+    return outlet
 
-@app.get("/menu/spice-level/{level}", response_model=List[MenuItem])
-async def get_menu_by_spice_level(level: SpiceLevel):
-    items = menu_processor.get_items_by_spice_level(level)
-    if not items:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No items found with spice level '{level}'"
-        )
-    return items
+@app.get("/knowledge-base/menu/categories")
+async def get_menu_categories() -> Dict[str, List[str]]:
+    """Get all menu categories"""
+    return chat_handler.knowledge_processor.menu_categories
 
-@app.get("/menu/chef-specials", response_model=List[MenuItem])
-async def get_chef_specials():
-    items = menu_processor.get_chef_specials()
-    if not items:
-        raise HTTPException(
-            status_code=404,
-            detail="No chef's specials available at the moment"
-        )
-    return items
-
-@app.get("/menu/category/{category}", response_model=List[MenuItem])
-async def get_menu_by_category(
+@app.get("/knowledge-base/menu/items/{category}")
+async def get_menu_items(
     category: str,
-    spice_level: Optional[SpiceLevel] = None
-):
-    items = menu_processor.get_menu_by_category(category)
-    if spice_level:
-        items = [item for item in items if item.spice_level == spice_level]
+    dietary: Optional[str] = None,
+    spice_level: Optional[str] = None
+) -> List[Dict]:
+    """Get menu items with optional filters"""
+    items = chat_handler.knowledge_processor.knowledge_base.menu_items.get(category, [])
     if not items:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No items found in category '{category}'"
-        )
+        raise HTTPException(status_code=404, detail=f"Category '{category}' not found")
     return items
 
-@app.get("/faq/search", response_model=List[FAQ])
-async def search_faqs(
-    query: str,
-    category: Optional[str] = None
-):
-    results = faq_processor.search_faqs(query)
-    if category:
-        results = [faq for faq in results if faq.category.lower() == category.lower()]
-    if not results:
+@app.get("/knowledge-base/contact/{city}/{location}")
+async def get_contact_info(city: str, location: str) -> PhoneContact:
+    """Get contact information for a specific outlet"""
+    contact = chat_handler.knowledge_processor.knowledge_base.phone_contacts.get(city, {}).get(location)
+    if not contact:
         raise HTTPException(
             status_code=404,
-            detail=f"No FAQs found matching '{query}'"
+            detail=f"Contact information not found for {location}, {city}"
         )
-    return results
+    return contact
 
-@app.get("/faq/{faq_id}", response_model=FAQ)
-async def get_faq(faq_id: str):
-    faq = faq_processor.get_faq_by_id(faq_id)
-    if not faq:
-        raise HTTPException(status_code=404, detail=f"FAQ with ID '{faq_id}' not found")
-    return faq
+@app.get("/knowledge-base/time-slots/{city}/{location}")
+async def get_available_slots(
+    city: str,
+    location: str,
+    date: Optional[str] = None
+) -> List[str]:
+    """Get available time slots for a specific outlet"""
+    slots = chat_handler.knowledge_processor.get_available_time_slots(location)
+    if not slots:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No time slots available for {location}, {city}"
+        )
+    return slots
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(message: UserMessage):
+@app.post("/chat")
+async def chat(message: UserMessage) -> ChatResponse:
     """
     Chat endpoint that handles user messages and returns appropriate responses
     
     The chat system will:
     1. Collect city information if not provided
     2. Collect specific location if multiple outlets exist in the city
-    3. Process the actual user query once location is confirmed
+    3. Process the actual query once location is confirmed
+    
+    Available cities:
+    - Bangalore (Indiranagar, JP Nagar)
+    - New Delhi (Connaught Place, Vasant Kunj)
     """
     try:
         return chat_handler.handle_message(message)

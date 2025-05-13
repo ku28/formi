@@ -1,9 +1,19 @@
 from typing import List, Optional, Dict
 from pydantic import BaseModel
+from datetime import datetime
+
+class PhoneContact(BaseModel):
+    outlet_name: str
+    city: str
+    primary_number: str
+    secondary_number: Optional[str]
+    booking_number: Optional[str]
+    support_number: Optional[str]
 
 class Conversation(BaseModel):
     role: str
     content: str
+    timestamp: datetime = datetime.now()
 
 class KnowledgeEntry(BaseModel):
     query: str
@@ -28,6 +38,7 @@ class OutletInfo(BaseModel):
     }
     complimentary_drinks: bool = False
     private_dining: bool = False
+    phone_contact: Optional[PhoneContact] = None
 
 class KnowledgeBase(BaseModel):
     menu_items: Dict[str, List[str]] = {
@@ -38,6 +49,5 @@ class KnowledgeBase(BaseModel):
         "desserts": [],
         "drinks": []
     }
-    outlets: Dict[str, Dict[str, OutletInfo]] = {}  # city -> {outlet_name -> info}
-    faqs: List[KnowledgeEntry] = []
-    evaluations: List[KnowledgeEntry] = [] 
+    outlets: Dict[str, Dict[str, OutletInfo]] = {}
+    phone_contacts: Dict[str, Dict[str, PhoneContact]] = {} 

@@ -1,0 +1,86 @@
+{
+  "locations": {
+    "Bangalore": {
+      "Bangalore   Bengaluru - Indiranagar   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      },
+      "Bangalore   Electronic City   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      },
+      "Bangalore   Jp Nagar   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      },
+      "Bangalore   Koramangala 1St Block   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      }
+    },
+    "New": {
+      "New Delhi - Connaught Place   Cp   Cp   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      },
+      "New Delhi - Sector C, Vasant Kunj   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      },
+      "New Delhi - Unity Mall, Janakpuri   Barbeque Nation": {
+        "weekday": {
+          "lunch": [],
+          "dinner": []
+        },
+        "weekend": {
+          "lunch": [],
+          "dinner": []
+        },
+        "special_days": {}
+      }
+    }
+  },
+  "last_updated": "2025-05-13T18:03:11.351443"
+}

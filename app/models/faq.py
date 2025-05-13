@@ -1,15 +1,26 @@
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel
+from enum import Enum
+
+class FAQCategory(str, Enum):
+    BOOKING = "booking"
+    MENU = "menu"
+    PAYMENT = "payment"
+    FACILITIES = "facilities"
+    TIMING = "timing"
+    GENERAL = "general"
 
 class FAQ(BaseModel):
-    question_id: str
+    id: str
     question: str
     answer: str
-    category: str
-    tags: list[str]
-    response_template: Optional[str] = None
+    category: FAQCategory
+    keywords: List[str]
+    related_questions: List[str] = []
+    metadata: Dict[str, str] = {}
 
-class FAQCategory(BaseModel):
-    name: str
-    description: Optional[str] = None
-    faqs: list[FAQ] 
+class FAQResponse(BaseModel):
+    question: str
+    answer: str
+    category: FAQCategory
+    related_questions: List[str] = [] 
