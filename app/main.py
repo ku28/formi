@@ -51,12 +51,12 @@ async def root():
         ]
     }
 
-@app.get("/knowledge-base/cities")
+@app.get("/cities")
 async def get_cities() -> List[str]:
     """Get list of available cities"""
     return chat_handler.knowledge_processor.get_available_cities()
 
-@app.get("/knowledge-base/locations/{city}")
+@app.get("/locations/{city}")
 async def get_locations(city: str) -> List[str]:
     """Get locations for a specific city"""
     locations = chat_handler.knowledge_processor.get_locations_in_city(city)
@@ -64,7 +64,7 @@ async def get_locations(city: str) -> List[str]:
         raise HTTPException(status_code=404, detail=f"City '{city}' not found")
     return locations
 
-@app.get("/knowledge-base/outlet/{city}/{location}")
+@app.get("/outlet/{city}/{location}")
 async def get_outlet_info(city: str, location: str) -> OutletInfo:
     """Get detailed information about a specific outlet"""
     outlet = chat_handler.knowledge_processor.knowledge_base.outlets.get(city, {}).get(location)
@@ -75,12 +75,12 @@ async def get_outlet_info(city: str, location: str) -> OutletInfo:
         )
     return outlet
 
-@app.get("/knowledge-base/menu/categories")
+@app.get("/menu/categories")
 async def get_menu_categories() -> Dict[str, List[str]]:
     """Get all menu categories"""
     return chat_handler.knowledge_processor.menu_categories
 
-@app.get("/knowledge-base/menu/items/{category}")
+@app.get("/menu/items/{category}")
 async def get_menu_items(
     category: str,
     dietary: Optional[str] = None,
@@ -92,7 +92,7 @@ async def get_menu_items(
         raise HTTPException(status_code=404, detail=f"Category '{category}' not found")
     return items
 
-@app.get("/knowledge-base/contact/{city}/{location}")
+@app.get("/contact/{city}/{location}")
 async def get_contact_info(city: str, location: str) -> PhoneContact:
     """Get contact information for a specific outlet"""
     contact = chat_handler.knowledge_processor.knowledge_base.phone_contacts.get(city, {}).get(location)
@@ -103,7 +103,7 @@ async def get_contact_info(city: str, location: str) -> PhoneContact:
         )
     return contact
 
-@app.get("/knowledge-base/time-slots/{city}/{location}")
+@app.get("/time-slots/{city}/{location}")
 async def get_available_slots(
     city: str,
     location: str,
